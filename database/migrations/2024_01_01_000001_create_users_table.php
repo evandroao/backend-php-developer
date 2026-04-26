@@ -11,19 +11,20 @@ return new class extends Migration
     public function up(): void
     {
         // Cria o enum type no PostgreSQL
-        DB::statement("CREATE TYPE role_enum AS ENUM ('ADMIN', 'USER')");
+        // DB::statement("CREATE TYPE role_enum AS ENUM ('ADMIN', 'USER')");
 
         Schema::create('users', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('username', 100)->unique();
             $table->string('password', 255);
+            $table->enum('role', ['ADMIN', 'USER'])->default('USER');
             // Usa o tipo nativo do PostgreSQL
             $table->boolean('enabled')->default(true);
             $table->timestamps();
         });
 
         // Adiciona coluna role com tipo enum nativo
-        DB::statement("ALTER TABLE users ADD COLUMN role role_enum NOT NULL DEFAULT 'USER'");
+        // DB::statement("ALTER TABLE users ADD COLUMN role role_enum NOT NULL DEFAULT 'USER'");
 
         // Seed admin user (password: admin)
         DB::table('users')->insert([
@@ -40,6 +41,6 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('users');
-        DB::statement("DROP TYPE IF EXISTS role_enum");
+        // DB::statement("DROP TYPE IF EXISTS role_enum");
     }
 };
