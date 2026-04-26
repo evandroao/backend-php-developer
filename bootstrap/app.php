@@ -16,6 +16,14 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+      $exceptions->render(function (AuthorizationException $e, Request $request) {
+        return response()->json([
+          'message' => $e->getMessage(),
+          'path' => '/' . $request->path(),
+          'status' => 403,
+          'error' => 'Forbidden',
+          'timestamp' => now()->toIso8601String(),
+        ], 403);
+      });
     })
     ->create();

@@ -21,6 +21,12 @@ class AbstractRequest
      */
     public function getShow(string $url): ?array
     {
-        return null;
+          $response = Http::get($url);
+
+          if ($response->failed()) {
+              return null;
+          }
+
+          return $response->json();
     }
 }
