@@ -14,12 +14,27 @@ services:
     depends_on:
       - postgres
     restart: always
+    extra_hosts:
+      - "host.docker.internal:172.27.0.1"
+    develop:
+      watch:
+      - action: sync
+        path: .
+        target: /app
+        ignore:
+          - vendor/
+          - .git/
+          - docker-compose.yml
+          - Dockerfile
+          - README.md
+          - bootstrap/cache/
+          - storage/
 
   postgres:
     image: postgres:16-alpine
     container_name: cmanager-postgres
     ports:
-      - "5433:5432"
+      - "5443:5432"
     environment:
       POSTGRES_DB: tvshow
       POSTGRES_USER: postgres
