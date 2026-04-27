@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\UserService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use Illuminate\Support\Str;
 
 class UserServiceTest extends TestCase
 {
@@ -81,7 +82,7 @@ class UserServiceTest extends TestCase
     public function test_find_by_id_throws_when_not_found(): void
     {
         $this->expectException(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
-        $this->service->findById('does-not-exist');
+        $this->service->findById(Str::uuid());
     }
 
     public function test_find_by_username_containing_with_pagination(): void
