@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Show extends Model
 {
@@ -34,4 +35,9 @@ class Show extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+    public function episodes(): HasMany
+    {
+        return $this->hasMany(Episode::class);
+    }
 }

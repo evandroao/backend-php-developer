@@ -18,7 +18,13 @@ use Illuminate\Http\Resources\Json\JsonResource;
  *     @OA\Property(property="averageRuntime", type="integer"),
  *     @OA\Property(property="officialSite", type="string"),
  *     @OA\Property(property="rating", type="number", format="float"),
- *     @OA\Property(property="summary", type="string")
+ *     @OA\Property(property="summary", type="string"),
+ *     @OA\Property(
+ *         property="episodes",
+ *         type="array",
+ *         @OA\Items(ref="#/components/schemas/EpisodeDTO"),
+ *         description="Lista de episódios do show"
+ *     )
  * )
  */
 class ShowResource extends JsonResource
@@ -36,6 +42,7 @@ class ShowResource extends JsonResource
             'officialSite' => $this->official_site,
             'rating' => $this->rating !== null ? (float) $this->rating : null,
             'summary' => $this->summary,
+            'episodes' => EpisodeResource::collection($this->whenLoaded('episodes')),
         ];
     }
 }

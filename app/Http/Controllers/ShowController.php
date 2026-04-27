@@ -60,6 +60,7 @@ class ShowController extends Controller
     public function show(string $id): JsonResponse
     {
         $show = $this->showService->findById($id);
+        $show->load('episodes');
 
         return response()->json(new ShowResource($show));
     }
@@ -79,7 +80,9 @@ class ShowController extends Controller
     {
         $show = $this->showService->sync($request->input('name'));
 
-        return response()->json(new ShowResource($show), 201)
+        $status = $show->wasRecentlyCreated ? 201 : 200;
+
+        return response()->json(new ShowResource($show), $status)
                          ->header('Location', '/api/shows/' . $show->id);
     }
 }

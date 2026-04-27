@@ -151,9 +151,9 @@ class ShowControllerTest extends TestCase
         $this->assertEquals(2, Episode::count());
     }
 
-    public function test_sync_show_already_exists_returns_409(): void
+    public function test_sync_show_already_exists_updates_show_and_episodes(): void
     {
-        Show::create([
+        $show = Show::create([
             'id_integration' => 123,
             'name' => 'Existing Show',
             'type' => 'Scripted',
@@ -166,19 +166,50 @@ class ShowControllerTest extends TestCase
             'summary' => 'Already in DB.',
         ]);
 
+        Episode::create([
+            'id_integration' => 9999,
+            'show_id' => $show->id,
+            'name' => 'Old Orphan Episode',
+            'season' => 1,
+            'number' => 99,
+            'type' => 'regular',
+            'airdate' => '2023-01-01',
+            'airtime' => '20:00',
+            'airstamp' => '2023-01-01T20:00:00+00:00',
+            'runtime' => 30,
+            'rating' => 5.0,
+            'summary' => 'Should be removed.',
+        ]);
+
         Http::fake([
             'api.tvmaze.com/*' => Http::response([
                 'id' => 123,
-                'name' => 'Existing Show',
+                'name' => 'Updated Show Name',
                 'type' => 'Scripted',
                 'language' => 'English',
-                'status' => 'Running',
-                'runtime' => 45,
-                'averageRuntime' => 45,
-                'officialSite' => null,
-                'rating' => ['average' => 8.0],
-                'summary' => 'Already in DB.',
-                '_embedded' => ['episodes' => []],
+                'status' => 'Ended',
+                'runtime' => 50,
+                'averageRuntime' => 50,
+                'officialSite' => 'https://updated.com',
+                'rating' => ['average' => 9.0],
+                'summary' => 'Updated summary.',
+                '_embedded' => [
+                    'episodes' => [
+                        [
+                            'id' => 1001,
+                            'name' => 'Pilot',
+                            'season' => 1,
+                            'number' => 1,
+                            'type' => 'regular',
+                            'airdate' => '2024-01-01',
+                            'airtime' => '20:00',
+                            'airstamp' => '2024-01-01T20:00:00+00:00',
+                            'runtime' => 50,
+                            'rating' => ['average' => 9.0],
+                            'summary' => 'Updated episode summary.',
+                        ],
+                    ],
+                ],
             ]),
         ]);
 
@@ -187,8 +218,28 @@ class ShowControllerTest extends TestCase
                 'name' => 'Existing Show',
             ]);
 
-        $response->assertStatus(409)
-            ->assertJsonPath('error', 'Conflict');
+        $response->assertStatus(200)
+            ->assertJsonPath('name', 'Updated Show Name')
+            ->assertJsonPath('status', 'Ended')
+            ->assertJsonPath('rating', 9);
+
+        $this->assertDatabaseHas('shows', [
+            'id_integration' => 123,
+            'name' => 'Updated Show Name',
+            'status' => 'Ended',
+        ]);
+
+        $this->assertDatabaseHas('episodes', [
+            'id_integration' => 1001,
+            'name' => 'Pilot',
+        ]);
+
+        $this->assertDatabaseMissing('episodes', [
+            'id_integration' => 9999,
+            'name' => 'Old Orphan Episode',
+        ]);
+
+        $this->assertEquals(1, Episode::count());
     }
 
     public function test_sync_show_not_found_returns_404(): void
