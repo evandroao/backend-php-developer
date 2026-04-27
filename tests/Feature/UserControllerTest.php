@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use Illuminate\Support\Facades\Hash;
 
 class UserControllerTest extends TestCase
 {
@@ -23,7 +24,7 @@ class UserControllerTest extends TestCase
         $this->seededUsername = 'seed_' . uniqid();
         $admin = User::create([
             'username' => $this->seededUsername,
-            'password' => bcrypt('seedpass'),
+            'password' => Hash::Make('seedpass'),
             'role' => Role::ADMIN->value,
             'enabled' => true,
         ]);
