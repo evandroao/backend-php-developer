@@ -1,40 +1,100 @@
-# Avaliação Desenvolvedor Backend PHP
+# TV Show Manager API
 
-## Objetivo:
-Avaliar a capacidade do desenvolvedor em construir e evoluir uma API REST robusta, utilizando
-PHP (versão estável mais recente), Laravel, banco de dados PostgreSQL, integrações externas,
-boas práticas de arquitetura, organização de código, segurança, Docker e documentação
+API REST para gerenciamento e sincronização de séries de TV com integração à [TVMaze API](https://www.tvmaze.com/api).
 
-## Requisitos técnicos:
+## Tecnologias
 
 - PHP 8.3
 - Laravel 12
-- Docker
-- PostgreSQL 16.X
-- Migrations (Laravel)
+- PostgreSQL 16
+- Docker & Docker Compose
 - JWT Auth (tymon/jwt-auth)
-- Arquitetura em camadas
-- Guzzle HTTP Client
-- Tratamento de erros padronizado
-- Documentação via L5-Swagger (OpenAPI)
+- OpenAPI/Swagger (L5-Swagger)
 
-## Estrutura disponibilizada
+## Pré-requisitos
 
-- Camada de segurança parcialmente pronta (Middlewares JWT e Role)
-- DTOs da API externa (Integration/DTO)
-- User (Controller, Service, Model)
-- Migrations com tabelas users e shows
-- Classe de paginação (PaginationHelper)
-- Classe modelo para chamadas externas (AbstractRequest)
+- Docker
+- Docker Compose v2+
 
 ## Como executar
 
+### 1. Clone o repositório
+
 ```bash
-docker-compose up --build
+git clone <repo-url>
+cd <app-dir>
 ```
 
-A aplicação estará disponível em `http://localhost:9012`
+### 2. Inicie os containers
 
-## Swagger
+```bash
+docker-compose up --build -d
+```
 
-Acesse `http://localhost:9012/api/documentation` após iniciar a aplicação.
+Aguarde o healthcheck do PostgreSQL (o app sobe automaticamente após o banco ficar pronto).
+
+### 3. Execute as migrations
+
+```bash
+docker-compose exec app php artisan migrate
+```
+
+### 4. Acesse a aplicação
+
+- API: `http://localhost:9012`
+- Swagger UI: `http://localhost:9012/api/documentation`
+
+## Autenticação
+
+A API utiliza JWT Bearer Token.
+
+### Login
+
+```bash
+curl -X POST http://localhost:9012/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username": "admin", "password": "admin"}'
+```
+
+use o token retornado no header `authorization: bearer <token>` nas demais requisições.
+
+### permissões
+
+| role | permissões |
+|------|------------|
+| **admin** | acesso total (crud de usuários, sincronização de shows) |
+| **user** | leitura de shows e episódios apenas |
+
+## endpoints principais
+
+| método | endpoint | descrição | role |
+|--------|----------|-----------|------|
+| post | `/api/auth/login` | login e geração de jwt | público |
+| get | `/api/users` | listar usuários paginados | admin |
+| post | `/api/users` | criar usuário | admin |
+| put | `/api/users/{id}` | atualizar usuário | admin |
+| delete | `/api/users/{id}` | remover usuário | admin |
+| get | `/api/shows` | listar shows paginados | admin, user |
+| get | `/api/shows/{id}` | detalhes de um show com episódios | admin, user |
+| post | `/api/shows` | sincronizar show da tvmaze | admin |
+| get | `/api/episodes/average` | média de rating por temporada | admin, user |
+
+## testes
+
+```bash
+# rodar todos os testes
+docker-compose exec app php artisan test
+
+# rodar testes específicos
+docker-compose exec app php artisan test --filter=showcontrollertest
+```
+
+## Documentação Swagger
+
+A documentação OpenAPI é gerada automaticamente a partir das anotações nos controllers.
+
+Para regenerar manualmente:
+
+```bash
+docker-compose exec app php artisan l5-swagger:generate
+```
