@@ -34,7 +34,7 @@ class ShowResource extends JsonResource
             'runtime' => $this->runtime,
             'averageRuntime' => $this->average_runtime,
             'officialSite' => $this->official_site,
-            'rating' => $this->rating,
+            'rating' => $this->rating !== null ? (float) $this->rating : null,
             'summary' => $this->summary,
         ];
     }
