@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::post('/auth/login', [AuthController::class, 'login']);
+Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:login');
 
 /*
 |--------------------------------------------------------------------------
@@ -38,7 +38,7 @@ Route::middleware(['jwt.auth', 'role:ADMIN'])->group(function () {
     Route::delete('/users/{id}', [UserController::class, 'destroy']);
 
     // Shows - A implementar pelo candidato
-    Route::post('/shows', [ShowController::class, 'store']);
+    Route::post('/shows', [ShowController::class, 'store'])->middleware('throttle:sync');
     Route::get('/shows', [ShowController::class, 'index']);
     Route::get('/shows/{id}', [ShowController::class, 'show']);
     // Episodes - A implementar pelo candidato
