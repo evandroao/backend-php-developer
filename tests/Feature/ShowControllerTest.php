@@ -74,7 +74,7 @@ class ShowControllerTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJsonPath('name', 'Breaking Bad')
-            ->assertJsonPath('rating', '9.50');
+            ->assertJsonPath('rating', 9.5);
     }
 
     public function test_sync_show_creates_show_and_episodes(): void
@@ -131,7 +131,7 @@ class ShowControllerTest extends TestCase
 
         $response->assertStatus(201)
             ->assertJsonPath('name', 'Mocked Show')
-            ->assertJsonPath('rating', '8.50');
+            ->assertJsonPath('rating', 8.5);
 
         $this->assertDatabaseHas('shows', [
             'id_integration' => 123,
@@ -149,6 +149,46 @@ class ShowControllerTest extends TestCase
         ]);
 
         $this->assertEquals(2, Episode::count());
+    }
+
+    public function test_sync_show_already_exists_returns_409(): void
+    {
+        Show::create([
+            'id_integration' => 123,
+            'name' => 'Existing Show',
+            'type' => 'Scripted',
+            'language' => 'English',
+            'status' => 'Running',
+            'runtime' => 45,
+            'average_runtime' => 45,
+            'official_site' => null,
+            'rating' => 8.0,
+            'summary' => 'Already in DB.',
+        ]);
+
+        Http::fake([
+            'api.tvmaze.com/*' => Http::response([
+                'id' => 123,
+                'name' => 'Existing Show',
+                'type' => 'Scripted',
+                'language' => 'English',
+                'status' => 'Running',
+                'runtime' => 45,
+                'averageRuntime' => 45,
+                'officialSite' => null,
+                'rating' => ['average' => 8.0],
+                'summary' => 'Already in DB.',
+                '_embedded' => ['episodes' => []],
+            ]),
+        ]);
+
+        $response = $this->withHeader('Authorization', 'Bearer ' . $this->adminToken)
+            ->postJson('/api/shows', [
+                'name' => 'Existing Show',
+            ]);
+
+        $response->assertStatus(409)
+            ->assertJsonPath('error', 'Conflict');
     }
 
     public function test_sync_show_not_found_returns_404(): void
