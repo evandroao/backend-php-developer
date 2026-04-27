@@ -44,6 +44,7 @@ class ShowService
             ]);
             $show->save();
 
+            $syncedIds = [];
             foreach ($dto->episodes as $episodeDto) {
                 Episode::updateOrCreate(
                     ['id_integration' => $episodeDto->id],
@@ -61,6 +62,13 @@ class ShowService
                         'summary' => $episodeDto->summary,
                     ]
                 );
+                $syncedIds[] = $episodeDto->id;
+            }
+
+            if (!empty($syncedIds)) {
+                Episode::where('show_id', $show->id)
+                    ->whereNotIn('id_integration', $syncedIds)
+                    ->delete();
             }
 
             return $show;
