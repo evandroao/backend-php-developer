@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\EpisodeAverageRequest;
 use App\Models\Episode;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 /**
  * @OA\Tag(name="EpisodeController", description="API de gerenciamento de episódios")
@@ -22,15 +22,13 @@ class EpisodeController extends Controller
      *     @OA\Response(response=404, description="Não há episódios para este show")
      * )
      */
-    public function average(Request $request): JsonResponse
+    public function average(EpisodeAverageRequest $request): JsonResponse
     {
-        $showId = $request->query('show_id');
+        $showId = $request->validated('show_id');
 
-        $episodes = Episode::where('show_id', $showId)
-            ->whereNotNull('rating')
-            ->get();
+        $hasEpisodes = Episode::where('show_id', $showId)->exists();
 
-        if ($episodes->isEmpty()) {
+        if (!$hasEpisodes) {
             return response()->json([
                 'message' => 'No episodes found for this show',
                 'status' => 404,
@@ -39,17 +37,17 @@ class EpisodeController extends Controller
             ], 404);
         }
 
-        $averages = $episodes
+        $averages = Episode::query()
+            ->select('season')
+            ->selectRaw('COALESCE(AVG(rating), 0) as average')
+            ->where('show_id', $showId)
             ->groupBy('season')
-            ->map(function ($seasonEpisodes) {
-                $ratings = $seasonEpisodes->pluck('rating')->filter();
-
-                return [
-                    'season' => $seasonEpisodes->first()->season,
-                    'average' => $ratings->isEmpty() ? 0.0 : (float) round($ratings->avg(), 2),
-                ];
-            })
-            ->values();
+            ->orderBy('season')
+            ->get()
+            ->map(fn ($row) => [
+                'season' => (int) $row->season,
+                'average' => (float) round($row->average, 2),
+            ]);
 
         return response()->json($averages);
     }

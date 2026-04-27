@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\PaginationHelper;
 use App\Http\Requests\ShowCreateRequest;
+use App\Http\Requests\ShowListRequest;
 use App\Http\Resources\ShowResource;
 use App\Services\ShowService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 /**
  * @OA\Tag(name="ShowController", description="API de gerenciamento de shows")
@@ -32,20 +33,17 @@ class ShowController extends Controller
      *     @OA\Response(response=200, description="Listagem realizada com sucesso")
      * )
      */
-    public function index(Request $request): JsonResponse
+    public function index(ShowListRequest $request): JsonResponse
     {
-        $name = $request->query('name', '');
-        $page = (int) $request->query('page', 0);
-        $size = (int) $request->query('size', 10);
+        $name = $request->validated('name', '');
+        $page = (int) $request->validated('page', 0);
+        $size = (int) $request->validated('size', 10);
 
         $paginator = $this->showService->list($name, $page, $size);
 
-        return response()->json([
-            'items' => ShowResource::collection($paginator->items()),
-            'total' => $paginator->total(),
-            'page' => $paginator->currentPage() - 1,
-            'size' => $paginator->perPage(),
-        ]);
+        $paginator->getCollection()->transform(fn ($show) => new ShowResource($show));
+
+        return response()->json(PaginationHelper::formatPageResult($paginator));
     }
 
     /**

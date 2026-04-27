@@ -4,11 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Helpers\PaginationHelper;
 use App\Http\Requests\UserCreateRequest;
+use App\Http\Requests\UserListRequest;
 use App\Http\Requests\UserUpdateRequest;
 use App\Http\Resources\UserResource;
 use App\Services\UserService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 /**
  * @OA\Tag(name="UserController", description="API de gerenciamento de usuários")
@@ -36,14 +36,13 @@ class UserController extends Controller
      *     @OA\Response(response=200, description="Listagem realizada com sucesso")
      * )
      */
-    public function index(Request $request): JsonResponse
+    public function index(UserListRequest $request): JsonResponse
     {
-        // BUG INTENCIONAL: Não verifica se o usuário é ADMIN
-        $username = $request->query('username', '');
-        $page = (int) $request->query('page', 0);
-        $size = (int) $request->query('size', 10);
-        $sortField = $request->query('sortField', 'id');
-        $sortOrder = $request->query('sortOrder', 'ASC');
+        $username = $request->validated('username', '');
+        $page = (int) $request->validated('page', 0);
+        $size = (int) $request->validated('size', 10);
+        $sortField = $request->validated('sortField', 'id');
+        $sortOrder = $request->validated('sortOrder', 'ASC');
 
         $paginator = $this->userService->findByUsernameContaining($username, $page, $size, $sortField, $sortOrder);
 
