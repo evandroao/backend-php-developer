@@ -25,7 +25,13 @@ git clone <repo-url>
 cd <app-dir>
 ```
 
-### 2. Inicie os containers
+### 2. Configure o ambiente
+
+```bash
+cp .env.example .env
+```
+
+### 3. Inicie os containers
 
 ```bash
 docker-compose up --build -d
@@ -33,13 +39,14 @@ docker-compose up --build -d
 
 Aguarde o healthcheck do PostgreSQL (o app sobe automaticamente após o banco ficar pronto).
 
-### 3. Execute as migrations
+### 4. Gere a chave e execute as migrations
 
 ```bash
+docker-compose exec app php artisan key:generate
 docker-compose exec app php artisan migrate
 ```
 
-### 4. Acesse a aplicação
+### 5. Acesse a aplicação
 
 - API: `http://localhost:9012`
 - Swagger UI: `http://localhost:9012/api/documentation`
