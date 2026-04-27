@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Integration\Client;
+use App\Integration\DTO\ShowsRequestDTO;
 
 /**
  * Serviço para consumo da API TVMaze.
@@ -21,11 +22,17 @@ class RequestService
      * Busca um show pelo nome na API TVMaze.
      *
      * @param string $showName Nome do show para busca
-     * @return array|null Dados do show com episódios
+     * @return ShowsRequestDTO|null Dados do show com episódios
      */
-    public function getShow(string $showName): ?array
+    public function getShow(string $showName): ?ShowsRequestDTO
     {
         $url = sprintf(self::URL, urlencode($showName));
-        return $this->abstractRequest->getShow($url);
+        $data = $this->abstractRequest->getShow($url);
+
+        if (!$data) {
+            return null;
+        }
+
+        return ShowsRequestDTO::fromArray($data);
     }
 }
