@@ -10,7 +10,8 @@ services:
     environment:
       APP_ENV: local
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     restart: always
     extra_hosts:
       - "host.docker.internal:172.27.0.1"
@@ -19,6 +20,19 @@ services:
       - /app/vendor
       - /app/bootstrap/cache
       - /app/storage
+    develop:
+      watch:
+        - action: sync
+          path: .
+          target: /app
+          ignore:
+            - vendor/
+            - .git/
+            - docker-compose.yml
+            - Dockerfile
+            - README.md
+            - bootstrap/cache/
+            - storage/
 
   postgres:
     image: postgres:16-alpine
@@ -31,6 +45,12 @@ services:
       POSTGRES_PASSWORD: postgres
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d tvshow"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
 volumes:
   pgdata:

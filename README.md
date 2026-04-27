@@ -37,19 +37,28 @@ cp .env.example .env
 docker-compose up --build -d
 ```
 
-Aguarde o healthcheck do PostgreSQL (o app sobe automaticamente após o banco ficar pronto).
+O **entrypoint** já executa internamente:
+- criação das pastas `bootstrap/cache` e `storage/*` com permissões corretas
+- geração da `APP_KEY` (se não existir)
+- execução das migrations (se o banco estiver acessível)
+- geração da documentação Swagger
 
-### 4. Gere a chave e execute as migrations
+> **Nota:** se aparecer o erro `Please provide a valid cache path`, basta reiniciar o container (`docker-compose restart app`) que o entrypoint recria as pastas automaticamente.
 
-```bash
-docker-compose exec app php artisan key:generate
-docker-compose exec app php artisan migrate
-```
-
-### 5. Acesse a aplicação
+### 4. Acesse a aplicação
 
 - API: `http://localhost:9012`
 - Swagger UI: `http://localhost:9012/api/documentation`
+
+### 5. Comandos úteis (watch & sync)
+
+```bash
+# Live-reload clássico via bind mount (já funciona com up)
+docker compose up -d
+
+# Sync otimizado via Docker Watch (ignora vendor, cache, storage)
+docker compose watch
+```
 
 ## Autenticação
 
@@ -63,44 +72,44 @@ curl -X POST http://localhost:9012/api/auth/login \
   -d '{"username": "admin", "password": "admin"}'
 ```
 
-use o token retornado no header `authorization: bearer <token>` nas demais requisições.
+Use o token retornado no header `authorization: bearer <token>` nas demais requisições.
 
-### permissões
+### Permissões
 
-| role | permissões |
+| Role | Permissões |
 |------|------------|
 | **admin** | acesso total (crud de usuários, sincronização de shows) |
 | **user** | leitura de shows e episódios apenas |
 
-## endpoints principais
+## Endpoints principais
 
-| método | endpoint | descrição | role |
+| Método | Endpoint | Descrição | Role |
 |--------|----------|-----------|------|
-| post | `/api/auth/login` | login e geração de jwt | público |
-| get | `/api/users` | listar usuários paginados | admin |
-| post | `/api/users` | criar usuário | admin |
-| put | `/api/users/{id}` | atualizar usuário | admin |
-| delete | `/api/users/{id}` | remover usuário | admin |
-| get | `/api/shows` | listar shows paginados | admin, user |
-| get | `/api/shows/{id}` | detalhes de um show com episódios | admin, user |
-| post | `/api/shows` | sincronizar show da tvmaze | admin |
-| get | `/api/episodes/average` | média de rating por temporada | admin, user |
+| POST | `/api/auth/login` | login e geração de jwt | público |
+| GET | `/api/users` | listar usuários paginados | admin |
+| POST | `/api/users` | criar usuário | admin |
+| PUT | `/api/users/{id}` | atualizar usuário | admin |
+| DELETE | `/api/users/{id}` | remover usuário | admin |
+| GET | `/api/shows` | listar shows paginados | admin, user |
+| GET | `/api/shows/{id}` | detalhes de um show com episódios | admin, user |
+| POST | `/api/shows` | sincronizar show da tvmaze | admin |
+| GET | `/api/episodes/average` | média de rating por temporada | admin, user |
 
-## testes
+## Testes
 
 ```bash
-# rodar todos os testes
+# Rodar todos os testes
 docker-compose exec app php artisan test
 
-# rodar testes específicos
-docker-compose exec app php artisan test --filter=showcontrollertest
+# Rodar testes específicos
+docker-compose exec app php artisan test --filter=ShowControllerTest
 ```
 
 ## Documentação Swagger
 
-A documentação OpenAPI é gerada automaticamente a partir das anotações nos controllers.
+A documentação OpenAPI é gerada **automaticamente na inicialização do container** a partir das anotações nos controllers.
 
-Para regenerar manualmente:
+Caso precise regenerar manualmente (ex: após alterar anotações sem reiniciar):
 
 ```bash
 docker-compose exec app php artisan l5-swagger:generate
