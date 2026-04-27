@@ -21,6 +21,10 @@ RUN composer install --optimize-autoloader --no-interaction --no-scripts
 
 COPY . .
 
+RUN mkdir -p bootstrap/cache storage/app/public storage/framework/cache/data \
+    storage/framework/sessions storage/framework/testing storage/framework/views storage/logs \
+    && chmod -R 775 bootstrap/cache storage
+
 RUN composer dump-autoload --optimize
 
 # Entrypoint para garantir pastas de cache/permissões na inicialização
