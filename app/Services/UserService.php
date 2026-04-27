@@ -101,7 +101,7 @@ class UserService
      */
     public function delete(string $id): void
     {
-        User::destroy($id);
+        User::findOrFail($id)->delete();
     }
 
     /**
@@ -121,8 +121,19 @@ class UserService
         string $sortField = 'id',
         string $sortOrder = 'ASC'
     ): LengthAwarePaginator {
+        $allowedFields = ['id', 'username', 'role', 'enabled', 'created_at', 'updated_at'];
+        $allowedOrders = ['ASC', 'DESC'];
+
+        if (!in_array(strtolower($sortField), array_map('strtolower', $allowedFields), true)) {
+            $sortField = 'id';
+        }
+
+        $sortOrder = in_array(strtoupper($sortOrder), $allowedOrders, true)
+            ? strtoupper($sortOrder)
+            : 'ASC';
+
         return User::where('username', 'ILIKE', "%{$username}%")
             ->orderBy($sortField, $sortOrder)
-            ->paginate($size, ['*'], 'page', $page + 1); // Laravel é 1-indexed
+            ->paginate($size, ['*'], 'page', $page + 1);
     }
 }
