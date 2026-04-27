@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\EpisodeController;
+use App\Http\Controllers\ShowController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -14,9 +16,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware(['jwt.auth'])->group(function () {
-    Route::post('/auth/login', [AuthController::class, 'login']);
-});
+Route::post('/auth/login', [AuthController::class, 'login']);
 
 /*
 |--------------------------------------------------------------------------
@@ -28,7 +28,7 @@ Route::middleware(['jwt.auth'])->group(function () {
 | O candidato deve adicionar o middleware de role adequado.
 |
 */
-Route::middleware(['jwt.auth'])->group(function () {
+Route::middleware(['jwt.auth', 'role:ADMIN'])->group(function () {
 
     // Users - CRUD (falta middleware de role)
     Route::get('/users', [UserController::class, 'index']);
@@ -38,9 +38,9 @@ Route::middleware(['jwt.auth'])->group(function () {
     Route::delete('/users/{id}', [UserController::class, 'destroy']);
 
     // Shows - A implementar pelo candidato
-    // Route::post('/shows', [ShowController::class, 'store']);
-    // Route::get('/shows', [ShowController::class, 'index']);
-
+    Route::post('/shows', [ShowController::class, 'store']);
+    Route::get('/shows', [ShowController::class, 'index']);
+    Route::get('/shows/{id}', [ShowController::class, 'show']);
     // Episodes - A implementar pelo candidato
-    // Route::get('/episodes/average', [EpisodeController::class, 'average']);
+    Route::get('/episodes/average', [EpisodeController::class, 'average']);
 });
