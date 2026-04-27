@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\LoginRequest;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
@@ -33,7 +34,7 @@ class AuthController extends Controller
             'password' => $request->input('password'),
         ];
 
-        $user = \App\Models\User::where('username', $credentials['username'])->first();
+        $user = User::where('username', $credentials['username'])->first();
 
         if (!$user || !$user->enabled) {
             return response()->json([
