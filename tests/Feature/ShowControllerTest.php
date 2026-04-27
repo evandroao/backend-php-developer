@@ -16,6 +16,7 @@ class ShowControllerTest extends TestCase
     use RefreshDatabase;
 
     private string $adminToken;
+    private string $userToken;
 
     protected function setUp(): void
     {
@@ -29,6 +30,15 @@ class ShowControllerTest extends TestCase
         ]);
 
         $this->adminToken = JWTAuth::fromUser($admin);
+
+        $user = User::create([
+            'username' => 'user_test',
+            'password' => bcrypt('password'),
+            'role' => Role::USER->value,
+            'enabled' => true,
+        ]);
+
+        $this->userToken = JWTAuth::fromUser($user);
     }
 
     public function test_list_shows_returns_paginated(): void
@@ -254,5 +264,141 @@ class ShowControllerTest extends TestCase
             ]);
 
         $response->assertStatus(404);
+    }
+
+    public function test_user_can_list_shows(): void
+    {
+        Show::create([
+            'id_integration' => 5,
+            'name' => 'User Accessible Show',
+            'type' => 'Scripted',
+            'language' => 'English',
+            'status' => 'Running',
+            'runtime' => 45,
+            'average_runtime' => 45,
+            'official_site' => null,
+            'rating' => 7.0,
+            'summary' => 'A show for user test.',
+        ]);
+
+        $response = $this->withHeader('Authorization', 'Bearer ' . $this->userToken)
+            ->getJson('/api/shows?page=0&size=10');
+
+        $response->assertStatus(200)
+            ->assertJsonPath('total', 1);
+    }
+
+    public function test_user_can_get_show_by_id(): void
+    {
+        $show = Show::create([
+            'id_integration' => 6,
+            'name' => 'Dexter',
+            'type' => 'Scripted',
+            'language' => 'English',
+            'status' => 'Ended',
+            'runtime' => 50,
+            'average_runtime' => 50,
+            'official_site' => null,
+            'rating' => 8.5,
+            'summary' => 'A show about a blood spatter analyst.',
+        ]);
+
+        $response = $this->withHeader('Authorization', 'Bearer ' . $this->userToken)
+            ->getJson('/api/shows/' . $show->id);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('name', 'Dexter');
+    }
+
+    public function test_user_cannot_sync_show_returns_403(): void
+    {
+        Http::fake([
+            'api.tvmaze.com/*' => Http::response([
+                'id' => 777,
+                'name' => 'Blocked Show',
+                'type' => 'Scripted',
+                'language' => 'English',
+                'status' => 'Running',
+                'runtime' => 45,
+                'averageRuntime' => 45,
+                'officialSite' => null,
+                'rating' => ['average' => 7.0],
+                'summary' => 'Should not be saved.',
+                '_embedded' => ['episodes' => []],
+            ]),
+        ]);
+
+        $response = $this->withHeader('Authorization', 'Bearer ' . $this->userToken)
+            ->postJson('/api/shows', [
+                'name' => 'Blocked Show',
+            ]);
+
+        $response->assertStatus(403)
+            ->assertJsonPath('error', 'Forbidden');
+
+        $this->assertDatabaseMissing('shows', [
+            'id_integration' => 777,
+        ]);
+    }
+
+    public function test_get_show_by_id_includes_episodes(): void
+    {
+        $show = Show::create([
+            'id_integration' => 10,
+            'name' => 'The Office',
+            'type' => 'Scripted',
+            'language' => 'English',
+            'status' => 'Ended',
+            'runtime' => 30,
+            'average_runtime' => 30,
+            'official_site' => null,
+            'rating' => 8.5,
+            'summary' => 'Mockumentary sitcom.',
+        ]);
+
+        Episode::create([
+            'id_integration' => 5001,
+            'show_id' => $show->id,
+            'name' => 'Pilot',
+            'season' => 1,
+            'number' => 1,
+            'type' => 'regular',
+            'airdate' => '2005-03-24',
+            'airtime' => '21:00',
+            'airstamp' => '2005-03-24T21:00:00+00:00',
+            'runtime' => 30,
+            'rating' => 8.0,
+            'summary' => 'First episode.',
+        ]);
+
+        Episode::create([
+            'id_integration' => 5002,
+            'show_id' => $show->id,
+            'name' => 'Diversity Day',
+            'season' => 1,
+            'number' => 2,
+            'type' => 'regular',
+            'airdate' => '2005-03-29',
+            'airtime' => '21:00',
+            'airstamp' => '2005-03-29T21:00:00+00:00',
+            'runtime' => 30,
+            'rating' => 8.5,
+            'summary' => 'Second episode.',
+        ]);
+
+        $response = $this->withHeader('Authorization', 'Bearer ' . $this->adminToken)
+            ->getJson('/api/shows/' . $show->id);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('name', 'The Office')
+            ->assertJsonCount(2, 'episodes')
+            ->assertJsonPath('episodes.0.name', 'Pilot')
+            ->assertJsonPath('episodes.0.season', 1)
+            ->assertJsonPath('episodes.0.number', 1)
+            ->assertJsonPath('episodes.0.type', 'regular')
+            ->assertJsonPath('episodes.0.airdate', '2005-03-24')
+            ->assertJsonPath('episodes.0.rating', 8)
+            ->assertJsonPath('episodes.0.summary', 'First episode.')
+            ->assertJsonPath('episodes.1.name', 'Diversity Day');
     }
 }

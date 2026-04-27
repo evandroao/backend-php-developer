@@ -16,6 +16,7 @@ class EpisodeControllerTest extends TestCase
     use RefreshDatabase;
 
     private string $adminToken;
+    private string $userToken;
     private Show $show;
 
     protected function setUp(): void
@@ -30,6 +31,15 @@ class EpisodeControllerTest extends TestCase
         ]);
 
         $this->adminToken = JWTAuth::fromUser($admin);
+
+        $user = User::create([
+            'username' => 'user_test',
+            'password' => Hash::Make('password'),
+            'role' => Role::USER->value,
+            'enabled' => true,
+        ]);
+
+        $this->userToken = JWTAuth::fromUser($user);
 
         $this->show = Show::create([
             'id_integration' => 1,
@@ -109,5 +119,31 @@ class EpisodeControllerTest extends TestCase
             ->getJson('/api/episodes/average?show_id=' . $this->show->id);
 
         $response->assertStatus(404);
+    }
+
+    public function test_user_can_access_average(): void
+    {
+        Episode::create([
+            'id_integration' => 301,
+            'show_id' => $this->show->id,
+            'name' => 'User Episode',
+            'season' => 1,
+            'number' => 1,
+            'type' => 'regular',
+            'airdate' => '2024-03-01',
+            'airtime' => '21:00',
+            'airstamp' => '2024-03-01T21:00:00+00:00',
+            'runtime' => 45,
+            'rating' => 8.0,
+            'summary' => 'Accessible by user.',
+        ]);
+
+        $response = $this->withHeader('Authorization', 'Bearer ' . $this->userToken)
+            ->getJson('/api/episodes/average?show_id=' . $this->show->id);
+
+        $response->assertStatus(200)
+            ->assertJsonCount(1)
+            ->assertJsonPath('0.season', 1)
+            ->assertJsonPath('0.average', 8);
     }
 }

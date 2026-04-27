@@ -29,18 +29,22 @@ Route::post('/auth/login', [AuthController::class, 'login'])->middleware('thrott
 |
 */
 Route::middleware(['jwt.auth', 'role:ADMIN'])->group(function () {
-
-    // Users - CRUD (falta middleware de role)
+    // Users - CRUD
     Route::get('/users', [UserController::class, 'index']);
     Route::get('/users/{id}', [UserController::class, 'show']);
     Route::post('/users', [UserController::class, 'store']);
     Route::put('/users/{id}', [UserController::class, 'update']);
     Route::delete('/users/{id}', [UserController::class, 'destroy']);
 
-    // Shows - A implementar pelo candidato
+    // Shows - apenas ADMIN pode sincronizar
     Route::post('/shows', [ShowController::class, 'store'])->middleware('throttle:sync');
+});
+
+Route::middleware(['jwt.auth'])->group(function () {
+    // Shows - leitura liberada para ADMIN e USER
     Route::get('/shows', [ShowController::class, 'index']);
     Route::get('/shows/{id}', [ShowController::class, 'show']);
-    // Episodes - A implementar pelo candidato
+
+    // Episodes - leitura liberada para ADMIN e USER
     Route::get('/episodes/average', [EpisodeController::class, 'average']);
 });
