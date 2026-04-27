@@ -14,8 +14,14 @@ class RatingDTO
 
     public static function fromArray(?array $data): self
     {
+        $average = $data['average'] ?? null;
+
+        if ($average !== null && !is_numeric($average)) {
+            $average = null;
+        }
+
         return new self(
-            average: $data['average'] ?? null,
+            average: $average !== null ? (float) $average : null,
         );
     }
 }

@@ -22,20 +22,33 @@ class EpisodeRequestDTO
         public readonly ?string $summary = null,
     ) {}
 
-    public static function fromArray(array $data): self
+    public static function fromArray(?array $data): ?self
     {
+        if ($data === null) {
+            return null;
+        }
+
+        $id = $data['id'] ?? null;
+        if (!is_numeric($id)) {
+            return null;
+        }
+
+        $season = $data['season'] ?? null;
+        $number = $data['number'] ?? null;
+        $runtime = $data['runtime'] ?? null;
+
         return new self(
-            id: $data['id'] ?? null,
-            name: $data['name'] ?? null,
-            season: $data['season'] ?? null,
-            number: $data['number'] ?? null,
-            type: $data['type'] ?? null,
-            airdate: $data['airdate'] ?? null,
-            airtime: $data['airtime'] ?? null,
-            airstamp: $data['airstamp'] ?? null,
-            runtime: $data['runtime'] ?? null,
+            id: (int) $id,
+            name: isset($data['name']) && is_string($data['name']) ? $data['name'] : null,
+            season: is_numeric($season) ? (int) $season : null,
+            number: is_numeric($number) ? (int) $number : null,
+            type: isset($data['type']) && is_string($data['type']) ? $data['type'] : null,
+            airdate: isset($data['airdate']) && is_string($data['airdate']) ? $data['airdate'] : null,
+            airtime: isset($data['airtime']) && is_string($data['airtime']) ? $data['airtime'] : null,
+            airstamp: isset($data['airstamp']) && is_string($data['airstamp']) ? $data['airstamp'] : null,
+            runtime: is_numeric($runtime) ? (int) $runtime : null,
             rating: RatingDTO::fromArray($data['rating'] ?? null),
-            summary: $data['summary'] ?? null,
+            summary: isset($data['summary']) && is_string($data['summary']) ? $data['summary'] : null,
         );
     }
 }

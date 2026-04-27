@@ -23,26 +23,46 @@ class ShowsRequestDTO
         public readonly array $episodes = [],
     ) {}
 
-    public static function fromArray(array $data): self
+    public static function fromArray(?array $data): ?self
     {
+        if ($data === null) {
+            return null;
+        }
+
+        $id = $data['id'] ?? null;
+        if (!is_numeric($id)) {
+            return null;
+        }
+
+        $name = $data['name'] ?? null;
+        if (!is_string($name) || trim($name) === '') {
+            return null;
+        }
+
+        $runtime = $data['runtime'] ?? null;
+        $averageRuntime = $data['averageRuntime'] ?? null;
+
         $episodes = [];
-        if (isset($data['_embedded']['episodes'])) {
+        if (isset($data['_embedded']['episodes']) && is_array($data['_embedded']['episodes'])) {
             foreach ($data['_embedded']['episodes'] as $ep) {
-                $episodes[] = EpisodeRequestDTO::fromArray($ep);
+                $episodeDto = EpisodeRequestDTO::fromArray(is_array($ep) ? $ep : null);
+                if ($episodeDto !== null) {
+                    $episodes[] = $episodeDto;
+                }
             }
         }
 
         return new self(
-            id: $data['id'] ?? null,
-            name: $data['name'] ?? null,
-            type: $data['type'] ?? null,
-            language: $data['language'] ?? null,
-            status: $data['status'] ?? null,
-            runtime: $data['runtime'] ?? null,
-            averageRuntime: $data['averageRuntime'] ?? null,
-            officialSite: $data['officialSite'] ?? null,
+            id: (int) $id,
+            name: $name,
+            type: isset($data['type']) && is_string($data['type']) ? $data['type'] : null,
+            language: isset($data['language']) && is_string($data['language']) ? $data['language'] : null,
+            status: isset($data['status']) && is_string($data['status']) ? $data['status'] : null,
+            runtime: is_numeric($runtime) ? (int) $runtime : null,
+            averageRuntime: is_numeric($averageRuntime) ? (int) $averageRuntime : null,
+            officialSite: isset($data['officialSite']) && is_string($data['officialSite']) ? $data['officialSite'] : null,
             rating: RatingDTO::fromArray($data['rating'] ?? null),
-            summary: $data['summary'] ?? null,
+            summary: isset($data['summary']) && is_string($data['summary']) ? $data['summary'] : null,
             episodes: $episodes,
         );
     }
