@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\Role;
 use Closure;
 use Illuminate\Http\Request;
 
@@ -27,8 +28,17 @@ class RoleMiddleware
             ], 401);
         }
 
-        // BUG: lógica invertida - deveria verificar se a role do usuário ESTÁ na lista
-        if (!in_array($user->role, $roles)) {
+        $userRole = Role::tryFrom($user->role);
+
+        if ($userRole === null) {
+            return response()->json([
+                'message' => 'Access Denied',
+                'status' => 403,
+                'error' => 'Forbidden',
+            ], 403);
+        }
+	// verifica rota especifica
+        if (!in_array($userRole->value, $roles, true)) {
             return response()->json([
                 'message' => 'Access Denied',
                 'status' => 403,
